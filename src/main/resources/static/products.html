@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Our Collection — Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search bracelets, haircare, serums...">
+        </div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="breadcrumb" id="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">›</span>
+            <span class="current" id="breadcrumb-current">Collection</span>
+        </div>
+
+        <div class="catalog-layout">
+            <!-- Left Side Panel (Sidebar) -->
+            <aside class="catalog-sidebar" id="catalog-sidebar">
+                <!-- All Products Nav -->
+                <div class="sidebar-block">
+                    <ul class="sidebar-nav-list">
+                        <li>
+                            <a href="javascript:void(0)" class="sidebar-nav-item active" onclick="selectCollection('all', this)">
+                                <span>🌸 All Products</span>
+                                <span class="sidebar-count-badge" id="total-count-badge">0</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Shop by Category & Sections (Dynamic Tree) -->
+                <div class="sidebar-block">
+                    <h3 class="sidebar-title">Shop by Category</h3>
+                    <div id="category-tree" class="sidebar-nav-list">
+                        <div class="loading-spinner"><div class="spinner"></div></div>
+                    </div>
+                </div>
+
+                <!-- Price Filter -->
+                <div class="sidebar-block">
+                    <h3 class="sidebar-title">Price Range</h3>
+                    <div class="filter-group-options">
+                        <label class="filter-radio-label">
+                            <input type="radio" name="price-filter" value="all" checked onchange="applyFilters()">
+                            <span>All Prices</span>
+                        </label>
+                        <label class="filter-radio-label">
+                            <input type="radio" name="price-filter" value="under250" onchange="applyFilters()">
+                            <span>Under ₹250</span>
+                        </label>
+                        <label class="filter-radio-label">
+                            <input type="radio" name="price-filter" value="250to450" onchange="applyFilters()">
+                            <span>₹250 – ₹450</span>
+                        </label>
+                        <label class="filter-radio-label">
+                            <input type="radio" name="price-filter" value="above450" onchange="applyFilters()">
+                            <span>Above ₹450</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Availability -->
+                <div class="sidebar-block">
+                    <h3 class="sidebar-title">Availability</h3>
+                    <div class="filter-group-options">
+                        <label class="filter-check-label">
+                            <input type="checkbox" id="instock-only" onchange="applyFilters()">
+                            <span>In Stock Only</span>
+                        </label>
+                    </div>
+                    <button class="btn-clear-filters" onclick="resetFilters()">Reset All Filters</button>
+                </div>
+            </aside>
+
+            <!-- Right Content Area (Products Grid) -->
+            <section class="catalog-main">
+                <!-- Catalog Header / Filter Bar -->
+                <div class="catalog-header-bar">
+                    <div class="catalog-title-group">
+                        <h1 id="catalog-title">Shop Our Collection</h1>
+                        <p id="result-count">Loading products...</p>
+                    </div>
+
+                    <div class="catalog-controls">
+                        <button class="btn-toggle-sidebar" onclick="toggleSidebar()">
+                            <span>☰</span>
+                            <span>Categories & Filters</span>
+                        </button>
+                        <select class="sort-select" id="sort-select" onchange="applyFilters()">
+                            <option value="featured">Sort by: Featured</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="name-asc">Name: A to Z</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Products Grid -->
+                <div class="products-grid" id="products-grid">
+                    <div class="loading-spinner"><div class="spinner"></div></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Luxury Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="brand-logo-script">Buzzy Girly</div>
+                <p>Where radiance meets elegance. Elevating your daily beauty, skincare, and fine jewellery rituals with luminous grace.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Collections</h4>
+                <ul>
+                    <li><a href="/products.html?category=34">Fine Jewellery</a></li>
+                    <li><a href="/products.html?category=33">Skincare & Serums</a></li>
+                    <li><a href="/products.html?category=1">Haircare & Shampoos</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Customer Care</h4>
+                <ul>
+                    <li><a href="/orders.html">Track Orders</a></li>
+                    <li><a href="/wishlist.html">My Wishlist</a></li>
+                    <li><a href="/cart.html">Shopping Bag</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Store Atelier</h4>
+                <ul>
+                    <li><a href="#">About Buzzy Girly</a></li>
+                    <li><a href="#">Authenticity Guarantee</a></li>
+                    <li><a href="#">Shipping & Returns</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2025 Buzzy Girly Atelier. All Rights Reserved.</span>
+            <span>Crafted with Elegance & Care.</span>
+        </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let allProducts = [];
+        let categories = [];
+        let currentFilter = {
+            type: 'all', // 'all', 'category', 'section', 'search'
+            id: null,
+            name: 'All Products'
+        };
+
+        const categoryIcons = {
+            'Hair Care': '💇',
+            'Skincare': '✨',
+            'Jewellery': '💎'
+        };
+
+        async function initCatalog() {
+            try {
+                // Fetch all categories and products
+                categories = await API.get('/api/categories');
+                renderCategoryTree(categories);
+
+                let productsList = [];
+                for (const cat of categories) {
+                    try {
+                        const prods = await API.get(`/api/products/category/${cat.id}`);
+                        productsList = productsList.concat(prods);
+                    } catch {}
+                }
+                allProducts = productsList;
+
+                // Update total count badge
+                const countBadge = document.getElementById('total-count-badge');
+                if (countBadge) countBadge.textContent = allProducts.length;
+
+                // Check URL params
+                const catParam = getParam('category');
+                const secParam = getParam('sectionId');
+                const searchParam = getParam('search');
+
+                if (searchParam) {
+                    currentFilter = { type: 'search', id: searchParam, name: `Search: "${searchParam}"` };
+                    setActiveNavItem(null);
+                } else if (secParam) {
+                    currentFilter = { type: 'section', id: Number(secParam), name: 'Selected Section' };
+                    // Find section name
+                    for (const c of categories) {
+                        const s = c.sections && c.sections.find(sec => sec.id === Number(secParam));
+                        if (s) { currentFilter.name = `${c.name} — ${s.name}`; break; }
+                    }
+                    setActiveNavItem(`sec-${secParam}`);
+                } else if (catParam) {
+                    const c = categories.find(cat => cat.id === Number(catParam));
+                    currentFilter = { type: 'category', id: Number(catParam), name: c ? c.name : 'Category' };
+                    setActiveNavItem(`cat-${catParam}`);
+                }
+
+                applyFilters();
+            } catch (err) {
+                document.getElementById('products-grid').innerHTML = '<div class="empty-state"><p>Error loading catalog.</p></div>';
+            }
+        }
+
+        function renderCategoryTree(cats) {
+            const container = document.getElementById('category-tree');
+            if (!cats || cats.length === 0) {
+                container.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted)">No categories found.</p>';
+                return;
+            }
+
+            container.innerHTML = cats.map(cat => {
+                const icon = categoryIcons[cat.name] || '🌸';
+                const sections = cat.sections || [];
+                const secHtml = sections.map(sec => `
+                    <li>
+                        <a href="javascript:void(0)" class="sidebar-sub-item" id="nav-sec-${sec.id}" onclick="selectSection(${sec.id}, '${sec.name}', '${cat.name}', this)">
+                            <span>${sec.name}</span>
+                            <span class="sidebar-count-badge">${sec.productCount || 0}</span>
+                        </a>
+                    </li>
+                `).join('');
+
+                return `
+                    <div style="margin-bottom: 6px;">
+                        <a href="javascript:void(0)" class="sidebar-nav-item" id="nav-cat-${cat.id}" onclick="selectCategory(${cat.id}, '${cat.name}', this)">
+                            <span>${icon} ${cat.name}</span>
+                            <span class="item-arrow">›</span>
+                        </a>
+                        ${sections.length > 0 ? `<ul class="sidebar-sub-list">${secHtml}</ul>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectCollection(type, el) {
+            currentFilter = { type: 'all', id: null, name: 'All Products' };
+            setActiveNavItem(el);
+            applyFilters();
+        }
+
+        function selectSpecial(special, el) {
+            currentFilter = { type: 'special', id: special, name: 'Bestsellers' };
+            setActiveNavItem(el);
+            applyFilters();
+        }
+
+        function selectCategory(catId, catName, el) {
+            currentFilter = { type: 'category', id: catId, name: catName };
+            setActiveNavItem(el);
+            applyFilters();
+        }
+
+        function selectCategoryByName(name, el) {
+            const cat = categories.find(c => c.name.toLowerCase().includes(name.toLowerCase()));
+            if (cat) {
+                selectCategory(cat.id, cat.name, el);
+            }
+        }
+
+        function selectSection(secId, secName, catName, el) {
+            currentFilter = { type: 'section', id: secId, name: `${catName} — ${secName}` };
+            setActiveNavItem(el);
+            applyFilters();
+        }
+
+        function setActiveNavItem(target) {
+            document.querySelectorAll('.sidebar-nav-item, .sidebar-sub-item').forEach(item => item.classList.remove('active'));
+            if (typeof target === 'string') {
+                const el = document.getElementById(`nav-${target}`);
+                if (el) el.classList.add('active');
+            } else if (target && target.classList) {
+                target.classList.add('active');
+            }
+        }
+
+        function applyFilters() {
+            let filtered = [...allProducts];
+
+            // 1. Filter by category/section/search
+            if (currentFilter.type === 'category') {
+                filtered = filtered.filter(p => p.categoryId === currentFilter.id);
+            } else if (currentFilter.type === 'section') {
+                filtered = filtered.filter(p => p.sectionId === currentFilter.id);
+            } else if (currentFilter.type === 'search') {
+                const q = currentFilter.id.toLowerCase();
+                filtered = filtered.filter(p =>
+                    (p.name && p.name.toLowerCase().includes(q)) ||
+                    (p.description && p.description.toLowerCase().includes(q))
+                );
+            }
+
+            // 2. Filter by Price
+            const priceOpt = document.querySelector('input[name="price-filter"]:checked')?.value || 'all';
+            if (priceOpt === 'under250') {
+                filtered = filtered.filter(p => p.price < 250);
+            } else if (priceOpt === '250to450') {
+                filtered = filtered.filter(p => p.price >= 250 && p.price <= 450);
+            } else if (priceOpt === 'above450') {
+                filtered = filtered.filter(p => p.price > 450);
+            }
+
+            // 3. Filter by In Stock
+            const inStockOnly = document.getElementById('instock-only')?.checked;
+            if (inStockOnly) {
+                filtered = filtered.filter(p => p.inStock);
+            }
+
+            // 4. Sort
+            const sortVal = document.getElementById('sort-select')?.value || 'featured';
+            if (sortVal === 'price-low') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (sortVal === 'price-high') {
+                filtered.sort((a, b) => b.price - a.price);
+            } else if (sortVal === 'name-asc') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            // Update UI
+            document.getElementById('catalog-title').textContent = currentFilter.name;
+            document.getElementById('breadcrumb-current').textContent = currentFilter.name;
+            document.getElementById('result-count').textContent = `${filtered.length} products found`;
+
+            renderProducts(filtered);
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            if (!products || products.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔍</div>
+                        <h3>No matching products</h3>
+                        <p>Try loosening your filters or explore another collection.</p>
+                        <button class="btn-primary-pill" onclick="resetFilters()">View All Products</button>
+                    </div>
+                `;
+                return;
+            }
+            grid.innerHTML = products.map(p => productCardHTML(p)).join('');
+            if (typeof renderAllCartButtons === 'function') {
+                renderAllCartButtons();
+            }
+        }
+
+        function resetFilters() {
+            document.querySelector('input[name="price-filter"][value="all"]').checked = true;
+            const inStock = document.getElementById('instock-only');
+            if (inStock) inStock.checked = false;
+            document.getElementById('sort-select').value = 'featured';
+            currentFilter = { type: 'all', id: null, name: 'All Products' };
+            setActiveNavItem(document.querySelector('.sidebar-nav-item'));
+            applyFilters();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('catalog-sidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        }
+
+        document.addEventListener('DOMContentLoaded', initCatalog);
+    </script>
+</body>
+</html>

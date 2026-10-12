@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category - Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search products..."></div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+    <main class="main-content">
+        <div class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">›</span>
+            <span class="current" id="breadcrumb-category">Category</span>
+        </div>
+
+        <div class="page-title">
+            <h1 id="category-name">Loading...</h1>
+            <p id="category-desc"></p>
+        </div>
+
+        <!-- Sections Grid -->
+        <div class="section-header">
+            <h2>Browse Sections</h2>
+        </div>
+        <div class="sections-grid" id="sections-grid">
+            <div class="loading-spinner"><div class="spinner"></div></div>
+        </div>
+
+        <!-- All Products in Category -->
+        <div class="section-header">
+            <h2>All Products</h2>
+        </div>
+        <div class="products-grid" id="category-products">
+            <div class="loading-spinner"><div class="spinner"></div></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand"><div class="brand-logo-script">Buzzy Girly</div></div>
+        <p>&copy; 2025 Buzzy Girly Atelier. All Rights Reserved.</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        const categoryId = getParam('id');
+
+        async function loadCategory() {
+            if (!categoryId) { window.location.href = '/'; return; }
+
+            try {
+                const cat = await API.get('/api/categories/' + categoryId);
+                document.getElementById('category-name').textContent = cat.name;
+                document.getElementById('breadcrumb-category').textContent = cat.name;
+                document.getElementById('category-desc').textContent = cat.description || '';
+                document.title = cat.name + ' - Buzzy Girly';
+
+                // Load sections
+                const sectionsGrid = document.getElementById('sections-grid');
+                if (cat.sections && cat.sections.length > 0) {
+                    sectionsGrid.innerHTML = cat.sections.map(s => `
+                        <div class="section-card" onclick="window.location.href='/products.html?sectionId=${s.id}&category=${categoryId}'">
+                            ${s.imageUrl ? <img src="${s.imageUrl}" alt="${s.name}"> : ''}
+                            <h3>${s.name}</h3>
+                            <div class="product-count">${s.productCount || 0} products</div>
+                        </div>
+                    `).join('');
+                } else {
+                    sectionsGrid.innerHTML = '<div class="empty-state"><div class="icon">📂</div><h3>No sections yet</h3></div>';
+                }
+
+                // Load products
+                const products = await API.get('/api/products/category/' + categoryId);
+                const productsGrid = document.getElementById('category-products');
+                if (products.length > 0) {
+                    productsGrid.innerHTML = products.map(p => productCardHTML(p)).join('');
+                } else {
+                    productsGrid.innerHTML = '<div class="empty-state"><div class="icon">🛍️</div><h3>No products yet</h3></div>';
+                }
+            } catch {
+                document.getElementById('category-name').textContent = 'Category not found';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadCategory);
+    </script>
+</body>
+</html>

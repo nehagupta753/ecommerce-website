@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product - Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search products..."></div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+    <main class="main-content">
+        <div class="breadcrumb" id="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">›</span>
+            <span class="current" id="breadcrumb-product">Product</span>
+        </div>
+
+        <div class="product-detail" id="product-detail">
+            <div class="loading-spinner" style="grid-column: 1/-1;"><div class="spinner"></div></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand"><div class="brand-logo-script">Buzzy Girly</div></div>
+        <p>&copy; 2025 Buzzy Girly Atelier. All Rights Reserved.</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        const productId = getParam('id');
+
+        async function loadProduct() {
+            if (!productId) { window.location.href = '/'; return; }
+
+            try {
+                const p = await API.get('/api/products/' + productId);
+                document.title = p.name + ' - Buzzy Girly';
+                document.getElementById('breadcrumb-product').textContent = p.name;
+
+                const imgHtml = p.imageUrl
+                    ? <img src="${p.imageUrl}" alt="${p.name}">
+                    : <div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:6rem;color:var(--text-muted);">🛍️</div>;
+
+                let wishlistClass = '';
+                let wishlistIcon = '♡';
+                if (Auth.isLoggedIn()) {
+                    try {
+                        const check = await API.get('/api/wishlist/check/' + p.id);
+                        if (check.inWishlist) {
+                            wishlistClass = 'wishlisted';
+                            wishlistIcon = '♥';
+                        }
+                    } catch {}
+                }
+
+                document.getElementById('product-detail').innerHTML = `
+                    <div class="product-image-large">${imgHtml}</div>
+                    <div class="product-info-detail">
+                        <div class="product-category" style="font-size:0.8rem;color:var(--primary-rose);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                            ${p.categoryName} › ${p.sectionName}
+                        </div>
+                        <h1>${p.name}</h1>
+                        <div class="detail-price">${formatPrice(p.price)}</div>
+                        <div class="stock-status ${p.inStock ? 'in-stock' : 'out-of-stock'}">
+                            ${p.inStock ? '● In Stock' : '● Out of Stock'}
+                        </div>
+                        <p class="detail-desc">${p.description || 'No description available.'}</p>
+                        <div class="detail-actions">
+                            <button class="btn-add-cart" ${!p.inStock ? 'disabled' : ''} onclick="addToCart(${p.id})">
+                                ${p.inStock ? 'Add to Cart' : 'Out of Stock'}
+                            </button>
+                            <button class="btn-wishlist ${wishlistClass}" onclick="toggleWishlist(${p.id}); this.classList.toggle('wishlisted');" data-product="${p.id}">
+                                ${wishlistIcon}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } catch {
+                document.getElementById('product-detail').innerHTML =
+                    '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚠️</div><h3>Product not found</h3><a href="/" class="btn-secondary">Go Home</a></div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProduct);
+    </script>
+</body>
+</html>

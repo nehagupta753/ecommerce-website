@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist - Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search products..."></div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+    <main class="main-content">
+        <div class="page-title">
+            <h1>My Wishlist</h1>
+        </div>
+        <div class="wishlist-grid" id="wishlist-grid">
+            <div class="loading-spinner"><div class="spinner"></div></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand"><div class="brand-logo-script">Buzzy Girly</div></div>
+        <p>&copy; 2025 Buzzy Girly Atelier. All Rights Reserved.</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        async function loadWishlist() {
+            const grid = document.getElementById('wishlist-grid');
+
+            try {
+                const items = await API.get('/api/wishlist');
+
+                if (!items || items.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state" style="grid-column:1/-1;">
+                            <div class="icon">♡</div>
+                            <h3>Your wishlist is empty</h3>
+                            <p>Save items you love for later</p>
+                            <a href="/products.html" class="btn-secondary">Browse Products</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                grid.innerHTML = items.map(item => `
+                    <div class="product-card">
+                        <div class="product-image">
+                            ${item.productImageUrl
+                                ? <img src="${item.productImageUrl}" alt="${item.productName}" loading="lazy">
+                                : '<div class="placeholder-img">💎</div>'
+                            }
+                            ${!item.productInStock ? '<div class="out-of-stock-badge">Out of Stock</div>' : ''}
+                        </div>
+                        <div class="product-info">
+                            <h3>${item.productName}</h3>
+                            <div class="product-bottom">
+                                <span class="product-price">${formatPrice(item.productPrice)}</span>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="btn-add-cart" ${!item.productInStock ? 'disabled' : ''} onclick="moveToCart(${item.productId})">
+                                        ${item.productInStock ? 'Add to Cart' : 'Unavailable'}
+                                    </button>
+                                    <button class="remove-btn" style="border-color:var(--coral);" onclick="removeWishlistItem(${item.productId})">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch {
+                grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚠️</div><h3>Please login to view wishlist</h3><a href="/login.html" class="btn-secondary">Sign In</a></div>';
+            }
+        }
+
+        async function moveToCart(productId) {
+            try {
+                await API.post('/api/cart', { productId, quantity: 1 });
+                await API.delete('/api/wishlist/' + productId);
+                showToast('Moved to cart! 🛍️', 'success');
+                loadWishlist();
+                updateBadges();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function removeWishlistItem(productId) {
+            try {
+                await API.delete('/api/wishlist/' + productId);
+                showToast('Removed from wishlist', 'info');
+                loadWishlist();
+                updateBadges();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadWishlist);
+    </script>
+</body>
+</html>

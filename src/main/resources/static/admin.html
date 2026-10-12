@@ -1,0 +1,647 @@
+ï»¿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search products..."></div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+    <main class="main-content">
+        <div class="admin-layout">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <h2>Admin Panel</h2>
+                <ul class="sidebar-nav">
+                    <li><a href="#" class="active" data-section="dashboard" onclick="showSection('dashboard', this)"><span class="nav-icon">📊</span> Dashboard</a></li>
+                    <li><a href="#" data-section="categories" onclick="showSection('categories', this)"><span class="nav-icon">📁</span> Categories</a></li>
+                    <li><a href="#" data-section="sections" onclick="showSection('sections', this)"><span class="nav-icon">📑</span> Sections</a></li>
+                    <li><a href="#" data-section="products" onclick="showSection('products', this)"><span class="nav-icon">📦</span> Products</a></li>
+                    <li><a href="#" data-section="orders" onclick="showSection('orders', this)"><span class="nav-icon">🛍️</span> Orders</a></li>
+                    <li><a href="#" data-section="inventory" onclick="showSection('inventory', this)"><span class="nav-icon">📋</span> Inventory</a></li>
+                </ul>
+            </aside>
+
+            <!-- Content -->
+            <div class="admin-content" id="admin-content">
+                <div class="loading-spinner"><div class="spinner"></div></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let allCategories = [];
+        let allSections = [];
+        let allProducts = [];
+
+        // ========== Section Navigation ==========
+        function showSection(section, el) {
+            if (el) {
+                document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+                el.classList.add('active');
+            }
+            switch(section) {
+                case 'dashboard': loadDashboard(); break;
+                case 'categories': loadCategoriesAdmin(); break;
+                case 'sections': loadSectionsAdmin(); break;
+                case 'products': loadProductsAdmin(); break;
+                case 'orders': loadOrdersAdmin(); break;
+                case 'inventory': loadInventory(); break;
+            }
+        }
+
+        // ========== Dashboard ==========
+        async function loadDashboard() {
+            try {
+                const [categories, products, orders] = await Promise.all([
+                    API.get('/api/categories'),
+                    API.get('/api/products/admin/all'),
+                    API.get('/api/orders/admin/all')
+                ]);
+
+                allCategories = categories;
+                allProducts = products;
+
+                const totalSections = categories.reduce((s, c) => s + (c.sections ? c.sections.length : 0), 0);
+                const lowStock = products.filter(p => p.quantity <= 5).length;
+                const totalRevenue = orders.reduce((s, o) => s + o.totalAmount, 0);
+
+                document.getElementById('admin-content').innerHTML = `
+                    <div class="admin-header"><h1>Dashboard</h1></div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📁</div>
+                            <div class="stat-value">${categories.length}</div>
+                            <div class="stat-label">Categories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-value">${products.length}</div>
+                            <div class="stat-label">Products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🛍️</div>
+                            <div class="stat-value">${orders.length}</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-value">${formatPrice(totalRevenue)}</div>
+                            <div class="stat-label">Revenue</div>
+                        </div>
+                    </div>
+
+                    ${lowStock > 0 ? `
+                        <div style="background:rgba(245,87,108,0.1);border:1px solid rgba(245,87,108,0.3);border-radius:var(--radius-md);padding:1rem 1.5rem;margin-bottom:2rem;display:flex;align-items:center;gap:10px;">
+                            <span>⚠️</span>
+                            <span><strong>${lowStock} products</strong> are low on stock (<= 5 units). <a href="#" onclick="showSection('inventory')" style="color:var(--coral);text-decoration:underline;">View Inventory</a></span>
+                        </div>
+                    ` : ''}
+
+                    <div class="admin-header"><h1>Recent Orders</h1></div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orders.slice(0, 10).map(o => `
+                                    <tr>
+                                        <td>#${o.id}</td>
+                                        <td>${o.customerName || o.username}</td>
+                                        <td>${o.items.length} items</td>
+                                        <td>${formatPrice(o.totalAmount)}</td>
+                                        <td><span class="order-status ${o.status.toLowerCase()}">${o.status}</span></td>
+                                        <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+                                    </tr>
+                                `).join('')}
+                                ${orders.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">No orders yet</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('admin-content').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Error loading dashboard</h3></div>';
+            }
+        }
+
+        // ========== Categories Admin ==========
+        async function loadCategoriesAdmin() {
+            try {
+                allCategories = await API.get('/api/categories');
+                const content = document.getElementById('admin-content');
+
+                content.innerHTML = `
+                    <div class="admin-header">
+                        <h1>Categories</h1>
+                        <button class="btn-add" onclick="openCategoryModal()">+ Add Category</button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Image</th><th>Name</th><th>Description</th><th>Sections</th><th>Order</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                ${allCategories.map(c => `
+                                    <tr>
+                                        <td>${c.imageUrl ? `<img src="${c.imageUrl}" class="table-img">` : '📁'}</td>
+                                        <td><strong>${c.name}</strong></td>
+                                        <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${c.description || '-'}</td>
+                                        <td>${c.sections ? c.sections.length : 0}</td>
+                                        <td>${c.displayOrder}</td>
+                                        <td class="table-actions">
+                                            <button class="btn-edit" onclick="openCategoryModal(${c.id})">✏️</button>
+                                            <button class="btn-delete" onclick="deleteCategory(${c.id})">🗑️</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                ${allCategories.length === 0 ? '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">No categories. Create your first one!</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch {}
+        }
+
+        function openCategoryModal(id = null) {
+            const cat = id ? allCategories.find(c => c.id === id) : null;
+            document.getElementById('modal-container').innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal">
+                        <h2>${cat ? 'Edit Category' : 'Add Category'}</h2>
+                        <form id="category-form">
+                            <div class="form-group">
+                                <label>Category Name</label>
+                                <input type="text" id="cat-name" class="form-control" value="${cat ? cat.name : ''}" required placeholder="e.g., Hair Care">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="cat-desc" class="form-control" placeholder="Brief description">${cat ? (cat.description || '') : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Display Order</label>
+                                <input type="number" id="cat-order" class="form-control" value="${cat ? cat.displayOrder : 0}">
+                            </div>
+                            <div class="form-group">
+                                <label>Image</label>
+                                <div class="file-upload" id="cat-file-upload">
+                                    <input type="file" id="cat-image" accept="image/*" onchange="previewImage(this, 'cat-preview')">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text">Click to upload image</div>
+                                    ${cat && cat.imageUrl ? `<img src="${cat.imageUrl}" class="preview-img" id="cat-preview">` : '<img class="preview-img hidden" id="cat-preview">'}
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="submit" class="btn-primary">${cat ? 'Update' : 'Create'}</button>
+                                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('category-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData();
+                fd.append('name', document.getElementById('cat-name').value);
+                fd.append('description', document.getElementById('cat-desc').value);
+                fd.append('displayOrder', document.getElementById('cat-order').value);
+                const file = document.getElementById('cat-image').files[0];
+                if (file) fd.append('image', file);
+
+                try {
+                    if (cat) {
+                        await API.upload(`/api/categories/${cat.id}`, fd, 'PUT');
+                        showToast('Category updated!', 'success');
+                    } else {
+                        await API.upload('/api/categories', fd);
+                        showToast('Category created!', 'success');
+                    }
+                    closeModal();
+                    loadCategoriesAdmin();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            });
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm('Delete this category and all its sections/products?')) return;
+            try {
+                await API.delete(`/api/categories/${id}`);
+                showToast('Category deleted', 'info');
+                loadCategoriesAdmin();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // ========== Sections Admin ==========
+        async function loadSectionsAdmin() {
+            try {
+                allCategories = await API.get('/api/categories');
+                allSections = [];
+                for (const cat of allCategories) {
+                    if (cat.sections) {
+                        allSections.push(...cat.sections.map(s => ({ ...s, categoryName: cat.name })));
+                    }
+                }
+
+                document.getElementById('admin-content').innerHTML = `
+                    <div class="admin-header">
+                        <h1>Sections</h1>
+                        <button class="btn-add" onclick="openSectionModal()">+ Add Section</button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Image</th><th>Name</th><th>Category</th><th>Products</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                ${allSections.map(s => `
+                                    <tr>
+                                        <td>${s.imageUrl ? `<img src="${s.imageUrl}" class="table-img">` : '📑'}</td>
+                                        <td><strong>${s.name}</strong></td>
+                                        <td>${s.categoryName}</td>
+                                        <td>${s.productCount || 0}</td>
+                                        <td class="table-actions">
+                                            <button class="btn-edit" onclick="openSectionModal(${s.id})">✏️</button>
+                                            <button class="btn-delete" onclick="deleteSection(${s.id})">🗑️</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                ${allSections.length === 0 ? '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted);">No sections yet</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch {}
+        }
+
+        function openSectionModal(id = null) {
+            const sec = id ? allSections.find(s => s.id === id) : null;
+            document.getElementById('modal-container').innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal">
+                        <h2>${sec ? 'Edit Section' : 'Add Section'}</h2>
+                        <form id="section-form">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="sec-category" class="form-control" required>
+                                    <option value="">Select category</option>
+                                    ${allCategories.map(c => `<option value="${c.id}" ${sec && sec.categoryId === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Section Name</label>
+                                <input type="text" id="sec-name" class="form-control" value="${sec ? sec.name : ''}" required placeholder="e.g., Shampoo">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="sec-desc" class="form-control" placeholder="Brief description">${sec ? (sec.description || '') : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Display Order</label>
+                                <input type="number" id="sec-order" class="form-control" value="${sec ? sec.displayOrder : 0}">
+                            </div>
+                            <div class="form-group">
+                                <label>Image</label>
+                                <div class="file-upload">
+                                    <input type="file" id="sec-image" accept="image/*" onchange="previewImage(this, 'sec-preview')">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text">Click to upload image</div>
+                                    ${sec && sec.imageUrl ? `<img src="${sec.imageUrl}" class="preview-img" id="sec-preview">` : '<img class="preview-img hidden" id="sec-preview">'}
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="submit" class="btn-primary">${sec ? 'Update' : 'Create'}</button>
+                                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('section-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData();
+                fd.append('categoryId', document.getElementById('sec-category').value);
+                fd.append('name', document.getElementById('sec-name').value);
+                fd.append('description', document.getElementById('sec-desc').value);
+                fd.append('displayOrder', document.getElementById('sec-order').value);
+                const file = document.getElementById('sec-image').files[0];
+                if (file) fd.append('image', file);
+
+                try {
+                    if (sec) {
+                        await API.upload(`/api/sections/${sec.id}`, fd, 'PUT');
+                        showToast('Section updated!', 'success');
+                    } else {
+                        await API.upload('/api/sections', fd);
+                        showToast('Section created!', 'success');
+                    }
+                    closeModal();
+                    loadSectionsAdmin();
+                } catch (err) { showToast(err.message, 'error'); }
+            });
+        }
+
+        async function deleteSection(id) {
+            if (!confirm('Delete this section and all its products?')) return;
+            try {
+                await API.delete(`/api/sections/${id}`);
+                showToast('Section deleted', 'info');
+                loadSectionsAdmin();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // ========== Products Admin ==========
+        async function loadProductsAdmin() {
+            try {
+                allProducts = await API.get('/api/products/admin/all');
+                allCategories = await API.get('/api/categories');
+                allSections = [];
+                for (const cat of allCategories) {
+                    if (cat.sections) allSections.push(...cat.sections.map(s => ({ ...s, categoryName: cat.name })));
+                }
+
+                document.getElementById('admin-content').innerHTML = `
+                    <div class="admin-header">
+                        <h1>Products</h1>
+                        <button class="btn-add" onclick="openProductModal()">+ Add Product</button>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Image</th><th>Name</th><th>Section</th><th>Price</th><th>Quantity</th><th>Status</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                ${allProducts.map(p => `
+                                    <tr>
+                                        <td>${p.imageUrl ? `<img src="${p.imageUrl}" class="table-img">` : '📦'}</td>
+                                        <td><strong>${p.name}</strong></td>
+                                        <td>${p.sectionName} <span style="color:var(--text-muted);font-size:0.75rem;">(${p.categoryName})</span></td>
+                                        <td>${formatPrice(p.price)}</td>
+                                        <td><span class="qty-badge ${p.quantity <= 0 ? 'low' : p.quantity <= 5 ? 'medium' : 'high'}">${p.quantity}</span></td>
+                                        <td><span class="order-status ${p.inStock ? 'confirmed' : 'cancelled'}">${p.inStock ? 'In Stock' : 'Out of Stock'}</span></td>
+                                        <td class="table-actions">
+                                            <button class="btn-edit" onclick="openProductModal(${p.id})">✏️</button>
+                                            <button class="btn-delete" onclick="deleteProduct(${p.id})">🗑️</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                                ${allProducts.length === 0 ? '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">No products yet</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch {}
+        }
+
+        function openProductModal(id = null) {
+            const prod = id ? allProducts.find(p => p.id === id) : null;
+            document.getElementById('modal-container').innerHTML = `
+                <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+                    <div class="modal">
+                        <h2>${prod ? 'Edit Product' : 'Add Product'}</h2>
+                        <form id="product-form">
+                            <div class="form-group">
+                                <label>Section</label>
+                                <select id="prod-section" class="form-control" required>
+                                    <option value="">Select section</option>
+                                    ${allSections.map(s => `<option value="${s.id}" ${prod && prod.sectionId === s.id ? 'selected' : ''}>${s.categoryName} > ${s.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Product Name</label>
+                                <input type="text" id="prod-name" class="form-control" value="${prod ? prod.name : ''}" required placeholder="e.g., Coconut Shampoo 250ml">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="prod-desc" class="form-control" placeholder="Product description">${prod ? (prod.description || '') : ''}</textarea>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                                <div class="form-group">
+                                    <label>Price (₹)</label>
+                                    <input type="number" id="prod-price" class="form-control" value="${prod ? prod.price : ''}" required step="0.01" min="0" placeholder="299.00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantity (Stock)</label>
+                                    <input type="number" id="prod-qty" class="form-control" value="${prod ? prod.quantity : 0}" min="0" placeholder="50">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Product Image</label>
+                                <div class="file-upload">
+                                    <input type="file" id="prod-image" accept="image/*" onchange="previewImage(this, 'prod-preview')">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text">Click to upload image</div>
+                                    ${prod && prod.imageUrl ? `<img src="${prod.imageUrl}" class="preview-img" id="prod-preview">` : '<img class="preview-img hidden" id="prod-preview">'}
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="submit" class="btn-primary">${prod ? 'Update' : 'Create'}</button>
+                                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('product-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData();
+                fd.append('sectionId', document.getElementById('prod-section').value);
+                fd.append('name', document.getElementById('prod-name').value);
+                fd.append('description', document.getElementById('prod-desc').value);
+                fd.append('price', document.getElementById('prod-price').value);
+                fd.append('quantity', document.getElementById('prod-qty').value);
+                const file = document.getElementById('prod-image').files[0];
+                if (file) fd.append('image', file);
+
+                try {
+                    if (prod) {
+                        await API.upload(`/api/products/${prod.id}`, fd, 'PUT');
+                        showToast('Product updated!', 'success');
+                    } else {
+                        await API.upload('/api/products', fd);
+                        showToast('Product created!', 'success');
+                    }
+                    closeModal();
+                    loadProductsAdmin();
+                } catch (err) { showToast(err.message, 'error'); }
+            });
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Delete this product?')) return;
+            try {
+                await API.delete(`/api/products/${id}`);
+                showToast('Product deleted', 'info');
+                loadProductsAdmin();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // ========== Orders Admin ==========
+        async function loadOrdersAdmin() {
+            try {
+                const orders = await API.get('/api/orders/admin/all');
+
+                document.getElementById('admin-content').innerHTML = `
+                    <div class="admin-header"><h1>All Orders</h1></div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                ${orders.map(o => `
+                                    <tr>
+                                        <td>#${o.id}</td>
+                                        <td>${o.customerName || o.username}<br><span style="font-size:0.75rem;color:var(--text-muted);">${o.phone || ''}</span></td>
+                                        <td>${o.items.map(i => `${i.productName} x${i.quantity}`).join('<br>')}</td>
+                                        <td>${formatPrice(o.totalAmount)}</td>
+                                        <td>${o.paymentMethod}</td>
+                                        <td>
+                                            <select class="status-select" onchange="updateOrderStatus(${o.id}, this.value)">
+                                                <option value="PENDING" ${o.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                                                <option value="CONFIRMED" ${o.status === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
+                                                <option value="SHIPPED" ${o.status === 'SHIPPED' ? 'selected' : ''}>Shipped</option>
+                                                <option value="DELIVERED" ${o.status === 'DELIVERED' ? 'selected' : ''}>Delivered</option>
+                                                <option value="CANCELLED" ${o.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                                            </select>
+                                        </td>
+                                        <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+                                        <td style="max-width:150px;font-size:0.75rem;color:var(--text-muted);">${o.shippingAddress || ''}</td>
+                                    </tr>
+                                `).join('')}
+                                ${orders.length === 0 ? '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No orders yet</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch {}
+        }
+
+        async function updateOrderStatus(orderId, status) {
+            try {
+                await API.put(`/api/orders/admin/${orderId}/status`, { status });
+                showToast('Order status updated', 'success');
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // ========== Inventory ==========
+        async function loadInventory() {
+            try {
+                const products = await API.get('/api/products/admin/all');
+                products.sort((a, b) => a.quantity - b.quantity);
+
+                document.getElementById('admin-content').innerHTML = `
+                    <div class="admin-header"><h1>Inventory</h1></div>
+                    <div class="stats-grid" style="margin-bottom:2rem;">
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-value">${products.length}</div>
+                            <div class="stat-label">Total Products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value">${products.filter(p => p.quantity > 5).length}</div>
+                            <div class="stat-label">In Stock</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-value">${products.filter(p => p.quantity > 0 && p.quantity <= 5).length}</div>
+                            <div class="stat-label">Low Stock</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-value">${products.filter(p => p.quantity <= 0).length}</div>
+                            <div class="stat-label">Out of Stock</div>
+                        </div>
+                    </div>
+                    <div class="admin-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr><th>Product</th><th>Category</th><th>Section</th><th>Price</th><th>Quantity</th><th>Status</th><th>Update</th></tr>
+                            </thead>
+                            <tbody>
+                                ${products.map(p => `
+                                    <tr style="${p.quantity <= 0 ? 'background:rgba(245,87,108,0.05);' : p.quantity <= 5 ? 'background:rgba(246,173,85,0.05);' : ''}">
+                                        <td><strong>${p.name}</strong></td>
+                                        <td>${p.categoryName}</td>
+                                        <td>${p.sectionName}</td>
+                                        <td>${formatPrice(p.price)}</td>
+                                        <td><span class="qty-badge ${p.quantity <= 0 ? 'low' : p.quantity <= 5 ? 'medium' : 'high'}">${p.quantity}</span></td>
+                                        <td><span class="order-status ${p.inStock ? 'confirmed' : 'cancelled'}">${p.inStock ? 'In Stock' : 'Out of Stock'}</span></td>
+                                        <td>
+                                            <input type="number" class="form-control" style="width:80px;padding:6px 8px;font-size:0.8rem;" value="${p.quantity}" min="0"
+                                                onchange="updateStock(${p.id}, this.value)">
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch {}
+        }
+
+        async function updateStock(productId, quantity) {
+            try {
+                const fd = new FormData();
+                fd.append('quantity', quantity);
+                await API.upload(`/api/products/${productId}`, fd, 'PUT');
+                showToast('Stock updated', 'success');
+                loadInventory();
+            } catch (e) { showToast(e.message, 'error'); }
+        }
+
+        // ========== Helpers ==========
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+        }
+
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ========== Init ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Auth.check();
+            if (!Auth.isOwner()) {
+                showToast('Access denied. Owner login required.', 'error');
+                setTimeout(() => window.location.href = '/login.html', 1000);
+                return;
+            }
+            updateNavbar();
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>
+
+

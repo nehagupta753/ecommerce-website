@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Buzzy Girly</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand"><span class="brand-logo-script">Buzzy Girly</span></a>
+        <div class="nav-search"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search products..."></div>
+        <div class="nav-actions" id="nav-actions"></div>
+    </nav>
+    <main class="main-content">
+        <div class="page-title">
+            <h1>My Orders</h1>
+        </div>
+        <div class="orders-list" id="orders-list">
+            <div class="loading-spinner"><div class="spinner"></div></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand"><div class="brand-logo-script">Buzzy Girly</div></div>
+        <p>&copy; 2025 Buzzy Girly Atelier. All Rights Reserved.</p>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+        async function loadOrders() {
+            const container = document.getElementById('orders-list');
+
+            try {
+                const orders = await API.get('/api/orders');
+
+                if (!orders || orders.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📦</div>
+                            <h3>No orders yet</h3>
+                            <p>Your order history will appear here</p>
+                            <a href="/products.html" class="btn-secondary">Start Shopping</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = orders.map(order => `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <span class="order-id">Order #${order.id}</span>
+                                <span class="order-date" style="margin-left:1rem;">
+                                    ${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:1rem;">
+                                <span class="order-status ${order.status.toLowerCase()}">${order.status}</span>
+                                <span style="font-size:0.8rem;color:var(--text-muted);">${order.paymentMethod}</span>
+                            </div>
+                        </div>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="order-item">
+                                    <img src="${item.productImageUrl || ''}" alt="${item.productName}" onerror="this.style.display='none'">
+                                    <span class="item-name">${item.productName}</span>
+                                    <span class="item-qty">x${item.quantity}</span>
+                                    <span class="item-price">${formatPrice(item.subtotal)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="order-footer">
+                            <span class="order-total">Total: ${formatPrice(order.totalAmount)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch {
+                container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Please login to view orders</h3><a href="/login.html" class="btn-secondary">Sign In</a></div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadOrders);
+    </script>
+</body>
+</html>
