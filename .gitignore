@@ -31,3 +31,11 @@ target/
 ### Data & Uploads Cache (keep uploads tracked or seed images if needed) ###
 data/
 *.log
+
+# Environment & Credentials
+.env
+.env.*
+*.env
+*.pem
+*.key
+credentials.json
